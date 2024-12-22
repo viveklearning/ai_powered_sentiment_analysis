@@ -38,16 +38,18 @@ const SentimentPortal = () => {
   };
 
   const handleDownload = async () => {
-    if (!analysis) return; // Ensure there is analysis data
-
+    if (!file) return; // Ensure there is a file
+  
     try {
-      const formData = new FormData(); // Send empty formData for CSV download
+      const formData = new FormData();
+      formData.append("file", file); // Send the file again for CSV download
+  
       const response = await axios.post("http://localhost:8000/analyze", formData, {
         headers: { Authorization: "Bearer secure_token" },
         params: { download: "csv" }, // Request CSV download
-        responseType: "blob", // Set the response type to blob for file download
+        responseType: "blob", // Expect a CSV file as blob
       });
-
+  
       // Create a link element to trigger the download
       const link = document.createElement("a");
       link.href = URL.createObjectURL(response.data);
@@ -57,6 +59,7 @@ const SentimentPortal = () => {
       console.error("Error downloading CSV:", error);
     }
   };
+  
 
   const generateChartData = () => {
     const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };

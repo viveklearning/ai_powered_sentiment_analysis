@@ -8,6 +8,7 @@ import csv
 from fastapi.responses import StreamingResponse
 from io import StringIO
 from typing import Optional
+import starlette.responses as _responses
 
 app = FastAPI()
 
@@ -30,6 +31,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 # Initialize Sentiment Analyzer
 analyzer = SentimentIntensityAnalyzer()
+
+
+@app.get("/")
+async def root():
+    return _responses.RedirectResponse("/redoc")
+
 
 @app.post("/analyze", dependencies=[Depends(get_current_user)])
 async def analyze_csv(
