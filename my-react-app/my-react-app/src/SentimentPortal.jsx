@@ -6,6 +6,9 @@ import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Lege
 // Register Chart.js components
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
+// Replace this with your actual backend URL
+const BACKEND_URL = "https://ai-powered-sentiment-analysis-4w5u3qe6t.vercel.app";
+
 const SentimentPortal = () => {
   const [file, setFile] = useState(null); // Holds the selected file
   const [analysis, setAnalysis] = useState(null); // Holds analysis data
@@ -26,7 +29,7 @@ const SentimentPortal = () => {
 
     try {
       // Send the file for analysis
-      const response = await axios.post("http://localhost:8000/analyze", formData, {
+      const response = await axios.post(`${BACKEND_URL}/analyze`, formData, {
         headers: { Authorization: "Bearer secure_token" },
       });
       setAnalysis(response.data.analysis); // Update analysis results
@@ -44,7 +47,7 @@ const SentimentPortal = () => {
       const formData = new FormData();
       formData.append("file", file); // Send the file again for CSV download
   
-      const response = await axios.post("http://localhost:8000/analyze", formData, {
+      const response = await axios.post(`${BACKEND_URL}/analyze`, formData, {
         headers: { Authorization: "Bearer secure_token" },
         params: { download: "csv" }, // Request CSV download
         responseType: "blob", // Expect a CSV file as blob
@@ -59,7 +62,6 @@ const SentimentPortal = () => {
       console.error("Error downloading CSV:", error);
     }
   };
-  
 
   const generateChartData = () => {
     const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
