@@ -9,6 +9,7 @@ ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 const SentimentPortal = () => {
   const [file, setFile] = useState(null);
   const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading] = useState(false); // Track loading state
 
   const handleFileUpload = (event) => {
     setFile(event.target.files[0]);
@@ -16,6 +17,8 @@ const SentimentPortal = () => {
   };
 
   const handleSubmit = async () => {
+    if (!file) return;
+    setLoading(true); // Start loading
     const formData = new FormData();
     formData.append("file", file);
 
@@ -26,6 +29,8 @@ const SentimentPortal = () => {
       setAnalysis(response.data.analysis);
     } catch (error) {
       console.error("Error uploading file:", error);
+    } finally {
+      setLoading(false); // End loading
     }
   };
 
@@ -49,8 +54,8 @@ const SentimentPortal = () => {
     <div>
       <h1>Sentiment Analysis Portal</h1>
       <input type="file" accept=".csv" onChange={handleFileUpload} />
-      <button onClick={handleSubmit} disabled={!file}>
-        Analyze
+      <button onClick={handleSubmit} disabled={loading || !file}>
+        {loading ? "Analyzing..." : "Analyze"}
       </button>
       {analysis && (
         <div>
