@@ -4,6 +4,10 @@ from fastapi.security import OAuth2PasswordBearer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import pandas as pd
 import io
+import csv
+from fastapi.responses import StreamingResponse
+from io import StringIO
+from typing import Optional
 
 app = FastAPI()
 
@@ -28,7 +32,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 analyzer = SentimentIntensityAnalyzer()
 
 @app.post("/analyze", dependencies=[Depends(get_current_user)])
-async def analyze_csv(file: UploadFile = File(...)):
+async def analyze_csv(
+    file: UploadFile = File(...), 
+    download: Optional[str] = None  # Make download optional
+):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be a CSV")
     
@@ -38,12 +45,11 @@ async def analyze_csv(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading CSV: {str(e)}")
     
-    if "id" not in data.columns or "text" not in data.columns:
-        missing_columns = [col for col in ["id", "text"] if col not in data.columns]
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Missing columns: {', '.join(missing_columns)}"
-        )
+    # Check if necessary columns are present
+    required_columns = ["id", "text"]
+    missing_columns = [col for col in required_columns if col not in data.columns]
+    if missing_columns:
+        raise HTTPException(status_code=400, detail=f"Missing columns: {', '.join(missing_columns)}")
 
     results = []
     for _, row in data.iterrows():
@@ -61,4 +67,13 @@ async def analyze_csv(file: UploadFile = File(...)):
             "scores": sentiment
         })
 
+    # If download is requested, generate the CSV
+    if download == "csv":
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=["id", "text", "sentiment", "scores"])
+        writer.writeheader()
+        writer.writerows(results)
+        output.seek(0)
+        return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=analysis_results.csv"})
+    
     return {"analysis": results}

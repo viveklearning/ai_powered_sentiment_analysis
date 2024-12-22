@@ -7,30 +7,54 @@ import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Lege
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 const SentimentPortal = () => {
-  const [file, setFile] = useState(null);
-  const [analysis, setAnalysis] = useState(null);
+  const [file, setFile] = useState(null); // Holds the selected file
+  const [analysis, setAnalysis] = useState(null); // Holds analysis data
   const [loading, setLoading] = useState(false); // Track loading state
 
   const handleFileUpload = (event) => {
-    setFile(event.target.files[0]);
+    setFile(event.target.files[0]); // Update file state
     setAnalysis(null); // Reset analysis when a new file is uploaded
   };
 
   const handleSubmit = async () => {
-    if (!file) return;
+    if (!file) return; // Ensure a file is selected
     setLoading(true); // Start loading
+    setAnalysis(null); // Clear previous analysis results
+
     const formData = new FormData();
     formData.append("file", file);
 
     try {
+      // Send the file for analysis
       const response = await axios.post("http://localhost:8000/analyze", formData, {
         headers: { Authorization: "Bearer secure_token" },
       });
-      setAnalysis(response.data.analysis);
+      setAnalysis(response.data.analysis); // Update analysis results
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error during analysis:", error);
     } finally {
       setLoading(false); // End loading
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!analysis) return; // Ensure there is analysis data
+
+    try {
+      const formData = new FormData(); // Send empty formData for CSV download
+      const response = await axios.post("http://localhost:8000/analyze", formData, {
+        headers: { Authorization: "Bearer secure_token" },
+        params: { download: "csv" }, // Request CSV download
+        responseType: "blob", // Set the response type to blob for file download
+      });
+
+      // Create a link element to trigger the download
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(response.data);
+      link.download = "analysis_results.csv"; // Set the file name
+      link.click(); // Trigger the download
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
     }
   };
 
@@ -60,6 +84,7 @@ const SentimentPortal = () => {
       {analysis && (
         <div>
           <Bar data={generateChartData()} />
+          <button onClick={handleDownload}>Download Results as CSV</button>
         </div>
       )}
     </div>
